@@ -18,16 +18,24 @@ codes for unexpected internal server errors.
 
 ## Authentication
 
-All requests must be authenticated using API token. The token key should be
-included in the `Authorization` HTTP header. The key should be prefixed
-by the string literal `Token`, with whitespace separating the two strings.
-For example:
+All requests must be authenticated using [Basic
+Auth](https://en.wikipedia.org/wiki/Basic_access_authentication#Client_side).
 
-```
-Authorization: Token 401f7ac837da42b97f613d789819ff93537bee6a
+With Basic Auth, you have to send the username and password **base64-encoded**
+in the standard Basic manner, e.g.
+`Authorization: Basic YXBpdXNlcjphcGlwYXNzd29yZA==`.
+
+Here is some sample code in Python to generate the value of the header:
+
+```python3
+>>> import base64
+>>> username = b'apiuser'
+>>> password = b'apipassword'
+>>> base64.b64encode(username + b':' + password)
+b'YXBpdXNlcjphcGlwYXNzd29yZA=='
 ```
 
-Failed requests will return a 401 HTTP code.
+Failed requests will return a 401 HTTP code with `WWW-Authenticate: Basic` response header.
 
 ## Request format
 
@@ -98,7 +106,7 @@ of the delivery option, and price where applicable.
 
     + Headers
 
-            Authorization: Token 401f7ac837da42b97f613d789819ff93537bee6a
+            Authorization: Token 64420d5b8934b2cd8b3a4dacfc5df22c6353c817
 
     + Body
 
