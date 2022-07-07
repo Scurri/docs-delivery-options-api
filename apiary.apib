@@ -1,80 +1,215 @@
-FORMAT: 1A
-HOST: https://polls.apiblueprint.org/
+FORMAT: 1A9
+HOST: https://sandbox.scurri.co.uk/api/2.0.0/
 
 # Delivery Options API
 
-Polls is a simple API allowing consumers to view polls and vote in them.
+The Delivery Options API provides eCommerce sellers with accurate shipping
+options at the checkout. Rules are created in the Scurri UI which enable you
+to specify the criteria for which options appear at checkout - this includes
+attributes such as recipient address, item dimension, and weight, and the day
+of the week. The API is also integrated with Delivery Locations lookup.
 
-## Questions Collection [/questions]
+## HTTP Codes
 
-### List All Questions [GET]
+HTTP codes are used to differentiate between successful and failed
+responses. As per the HTTP standard: 20x codes are for successful
+requests, 40x codes for errors with validation or permissions, 50x
+codes for unexpected internal server errors.
 
-+ Response 200 (application/json)
+## Authentication
 
-        [
-            {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
-                    {
-                        "choice": "Swift",
-                        "votes": 2048
-                    }, {
-                        "choice": "Python",
-                        "votes": 1024
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 512
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 256
-                    }
-                ]
-            }
-        ]
+All requests must be authenticated using [Basic
+Auth](https://en.wikipedia.org/wiki/Basic_access_authentication#Client_side).
 
-### Create a New Question [POST]
+With Basic Auth, you have to send the username and password **base64-encoded**
+in the standard Basic manner, e.g.
+`Authorization: Basic YXBpdXNlcjphcGlwYXNzd29yZA==`.
 
-You may create your own question using this action. It takes a JSON
-object containing a question and a collection of answers in the
-form of choices.
+Here is some sample code in Python to generate the value of the header:
 
-+ Request (application/json)
+```python3
+>>> import base64
+>>> username = b'apiuser'
+>>> password = b'apipassword'
+>>> base64.b64encode(username + b':' + password)
+b'YXBpdXNlcjphcGlwYXNzd29yZA=='
+```
 
-        {
-            "question": "Favourite programming language?",
-            "choices": [
-                "Swift",
-                "Python",
-                "Objective-C",
-                "Ruby"
-            ]
-        }
+Failed requests will return a 401 HTTP code with `WWW-Authenticate: Basic` response header.
 
-+ Response 201 (application/json)
+## Request format
+
+All body payloads must be in JSON format, unless stated otherwise.
+
+As a result, the `Content-Type` header must be set to `application/json`.
+
+# Delivery Options [/company/{company_slug}/delivery_options/]
+
+## List Delivery Options [POST]
+
+The result contains a list of delivery options available along with the
+`service_id` (combination of the carrier and service name), a description
+of the delivery option, and price where applicable.
+
+
++ Parameters
+    + company_slug: `api-test-company` (string, required) - The slug of your company in Scurri.
+
++ Request List Delivery Options (application/json)
+    + Attributes (object)
+        + recipient (object, required) - The recipient of the consignment.
+            + name (string) - The name of the recipient.
+            + first_name (string) - The first name of the recipient.
+            + last_name (string) - The last name of the recipient.
+            + company_name (string) - The company name of the recipient.
+            + email_address (string) - The email address of the recipient.
+            + contact_number (string) - The phone number of the recipient.
+            + address (object, required) - The address of the recipient.
+                + address1 (string) - The first line of the address.
+                + address2 (string) - The second line of the address.
+                + address3 (string) - The third line of the address.
+                + city (string) - The city of the recipient.
+                + state (string) - The state of the recipient.
+                + postcode (string) - The postal code of the recipient.
+                + country (string) - The country of the recipient.
+                + latitude (number) - The latitude of the recipient.
+                + longitude (number) - The longitude of the recipient.
+        + packages (array, fixed-type) - An optional list of packages of the consignment.
+            + (object)
+                + width (number) - The width of the package.
+                + height (number) - The height of the package.
+                + length (number) - The length of the package.
+                + weight (number, required) - The wieght of the package.
+                + description (string) - The description of the package.
+                + items (array, fixed-type) - An optional list of items of the package.
+                    + (object)
+                        + weight (number, required) The weight of the item.
+                        + value (number, required) The value of the item.
+                        + name (string) The name of the item.
+                        + quantity (number) The number of items.
+                        + sku (string) The SKU (stock keeping unit) of the item.
+                        + country_of_origin (string) The country of origin.
+                        + harmonisation_code (string) The harmonisation code of the item.
+        + package_type (string) - The type of the package.
+        + shipping_method (string) - The shipping method.
+        + order_number (string) - The order number of the consignment.
+        + warehouse_id: `company-slug|Warehouse Name` (string, required) - The identifier of the warehouse.
+        + invoice (object) - The invoice information.
+            + incoterm (string) The type of the customs invoice.
+        + options (object) - An object with options of the consignment.
+        + currency (string) - The currency code associated with the consignment (ISO 4217 code).
+        + order_value (string) - The total value of the order.
+        + rules_package_type (string) - The custom package type.
+        + shipping_date: `2020-08-04T10:53:47Z` (string) - The shipping date of the consignment in ISO 8601 format.
+        + custom_field_1 (string) - The first field for the custom data.
+        + custom_field_2 (string) - The second field for the custom data.
 
     + Headers
 
-            Location: /questions/2
+            Authorization: Token 64420d5b8934b2cd8b3a4dacfc5df22c6353c817
 
     + Body
 
             {
-                "question": "Favourite programming language?",
-                "published_at": "2015-08-05T08:40:51.620Z",
-                "choices": [
+                "recipient": {
+                    "first_name": "John",
+                    "last_name": "Doe",
+                    "name": "Mr. John Doe",
+                    "company_name": "ACME",
+                    "contact_number": "021 123 4567",
+                    "address": {
+                        "address1": "199 Main Street",
+                        "country": "GB",
+                        "postcode": "AA9 9AA",
+                        "city": "London"
+                    },
+                    "email_address": "jdoe@example.com"
+                },
+                "packages": [
                     {
-                        "choice": "Swift",
-                        "votes": 0
-                    }, {
-                        "choice": "Python",
-                        "votes": 0
-                    }, {
-                        "choice": "Objective-C",
-                        "votes": 0
-                    }, {
-                        "choice": "Ruby",
-                        "votes": 0
+                        "description": "Test package",
+                        "weight": "2.4",
+                        "items": [
+                            {
+                            "sku": "SKU123",
+                            "country_of_origin": "IE",
+                            "name": "Test item",
+                            "weight": "2.4",
+                            "harmonisation_code": "123456",
+                            "value": "123.0",
+                            "quantity": 1
+                            }
+                        ],
+                        "height": "15.9",
+                        "width": "40.3",
+                        "length": "27.8"
+                    }
+                ],
+                "warehouse_id": "api-test-company|Warehouse 1",
+                "custom_field_2": "Reference 2",
+                "custom_field_1": "Reference 1",
+                "order_value": "29.99",
+                "order_number": "8384832",
+                "shipping_date": "2020-06-16T10:00:00Z",
+                "rules_package_type": "Parcel",
+                "currency": "EUR",
+                "invoice": {
+                    "incoterm": "DAP"
+                },
+                "options": {
+                    "package_type": "Parcel",
+                    "signed": "yes"
+                }
+            }
+
++ Response 201 (application/json)
+
+    + Attributes (object)
+        + delivery_options (array, fixed-type) - The list of delivery options.
+            + (object)
+                + name (string) - The name of the delivery option at checkout.
+                + description (string) - The description of the delivery option.
+                + service_id (string) - Combination of the carrier and service name separated by `|`.
+                + warehouse (string) - Optional attribute (included if the warehouse is manually assigned in the delivery option configuration).
+                + invoice (object) - Optional attribute (included if configured in the delivery option configuration). The invoice configuration.
+                    + incoterm (string) - The type of the customs invoice.
+                + options (object) - Optional attribute (included if configured in the delivery option configuration).
+                + delivery_price (object) - Optional attribute (included if configured in the delivery option configuration).
+                    + value (string) - The value of the delivery price.
+                    + currency (string) - The currency code of the delivery price (ISO 4217 code).
+
+    + Body
+
+            {
+                "delivery_options": [
+                    {
+                        "name": "Next Day",
+                        "service_id": "Test Carrier|Next Day Service",
+                        "description": "Test Description",
+                        "warehouse": "api-test-company|Warehouse-1",
+                        "invoice": {
+                            "incoterm": "DAP"
+                        },
+                        "options": {
+                            "battery": "Alkaline Button Cell / Zinc Chloride Dry Batteries",
+                            "paperless_trade": "No",
+                            "package_type": "Parcel/Conveyable",
+                            "saturday_delivery": "No"
+                        },
+                        "delivery_price": {
+                            "value": "4.95",
+                            "currency": "GBP"
+                        }
+                    },
+                    {
+                        "name": "Two Days",
+                        "service_id": "Test Carrier|Two Days Service",
+                        "description": "Test Description",
+                        "warehouse": "api-test-company|Warehouse-1",
+                        "delivery_price": {
+                            "value": "5.99",
+                            "currency": "GBP"
+                        }
                     }
                 ]
             }
